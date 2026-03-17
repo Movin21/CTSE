@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+  orderId       String
+  eventType     String   @default("ORDER_PLACED")
+  message       String
+  customerEmail String   @default("")
+  createdAt     DateTime @default(now())
+}

@@ -1,0 +1,251 @@
+services:
+  # ─── Infrastructure ────────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-ctse_admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-RabbitS3cur3!}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - microservices_net
+
+  # ─── Databases ─────────────────────────────────────────────────────────────
+  identity-db:
+    image: postgres:16-alpine
+    container_name: identity-db
+    environment:
+      POSTGRES_DB: identity_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-S3cur3P@ss2024!}
+    ports:
+      - "5433:5432"
+    volumes:
+      - identity-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices_net
+
+  order-db:
+    image: postgres:16-alpine
+    container_name: order-db
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-S3cur3P@ss2024!}
+    ports:
+      - "5434:5432"
+    volumes:
+      - order-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices_net
+
+  product-db:
+    image: postgres:16-alpine
+    container_name: product-db
+    environment:
+      POSTGRES_DB: product_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-S3cur3P@ss2024!}
+    ports:
+      - "5435:5432"
+    volumes:
+      - product-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices_net
+
+  notification-db:
+    image: postgres:16-alpine
+    container_name: notification-db
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-S3cur3P@ss2024!}
+    ports:
+      - "5436:5432"
+    volumes:
+      - notification-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices_net
+
+  # ─── Backend Services ───────────────────────────────────────────────────────
+  identity-service:
+    build:
+      context: ./identity-service
+      dockerfile: Dockerfile
+    container_name: identity-service
+    ports:
+      - "8081:8081"
+    environment:
+      DATABASE_URL: jdbc:postgresql://identity-db:5432/identity_db
+      DATABASE_USER: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-S3cur3P@ss2024!}
+      JWT_SECRET: ${JWT_SECRET:-ctse-se4010-ultra-secure-jwt-secret-key-2024!}
+    depends_on:
+      identity-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - microservices_net
+
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+    container_name: product-service
+    ports:
+      - "8082:8082"
+    environment:
+      DATABASE_URL: jdbc:postgresql://product-db:5432/product_db
+      DATABASE_USER: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-S3cur3P@ss2024!}
+    depends_on:
+      product-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8082/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - microservices_net
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: order-service
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-S3cur3P@ss2024!}@order-db:5432/order_db
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-ctse_admin}:${RABBITMQ_PASS:-RabbitS3cur3!}@rabbitmq:5672
+      ORDER_PORT: 3001
+    depends_on:
+      order-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - microservices_net
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "3002:3002"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-S3cur3P@ss2024!}@notification-db:5432/notification_db
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-ctse_admin}:${RABBITMQ_PASS:-RabbitS3cur3!}@rabbitmq:5672
+      NOTIFICATION_PORT: 3002
+    depends_on:
+      notification-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - microservices_net
+
+  # ─── API Gateway ────────────────────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      GATEWAY_PORT: 8080
+      IDENTITY_SERVICE_URL: http://identity-service:8081
+      ORDER_SERVICE_URL: http://order-service:3001
+      PRODUCT_SERVICE_URL: http://product-service:8082
+      NOTIFICATION_SERVICE_URL: http://notification-service:3002
+    depends_on:
+      identity-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - microservices_net
+
+  # ─── Frontend ───────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - microservices_net
+
+volumes:
+  identity-db-data:
+  order-db-data:
+  product-db-data:
+  notification-db-data:
+
+networks:
+  microservices_net:
+    name: microservices_net
+    driver: bridge

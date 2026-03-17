@@ -1,0 +1,168 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #0a0b0f;
+    --bg-secondary: #0f1117;
+    --bg-card: #161820;
+    --bg-hover: #1e2130;
+    --border: rgba(99, 102, 241, 0.15);
+    --border-hover: rgba(99, 102, 241, 0.35);
+    --accent: #6366f1;
+    --accent-glow: #818cf8;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #475569;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #f43f5e;
+    --info: #38bdf8;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 80% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 20% 100%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.3);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.6);
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-[#161820] border border-[rgba(99,102,241,0.15)] rounded-xl p-5 transition-all duration-200;
+  }
+
+  .card:hover {
+    @apply border-[rgba(99,102,241,0.35)] shadow-[0_4px_24px_rgba(0,0,0,0.4)];
+  }
+
+  .btn-primary {
+    @apply bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-5 py-2.5 rounded-lg 
+           transition-all duration-200 flex items-center gap-2 cursor-pointer
+           shadow-[0_0_20px_rgba(99,102,241,0.25)] hover:shadow-[0_0_30px_rgba(99,102,241,0.4)];
+  }
+
+  .btn-secondary {
+    @apply bg-[#1e2130] hover:bg-[#252840] text-slate-300 font-medium px-5 py-2.5 rounded-lg 
+           transition-all duration-200 flex items-center gap-2 cursor-pointer border border-[rgba(99,102,241,0.15)];
+  }
+
+  .btn-danger {
+    @apply bg-rose-600/20 hover:bg-rose-600/40 text-rose-400 font-medium px-5 py-2.5 rounded-lg 
+           transition-all duration-200 flex items-center gap-2 cursor-pointer border border-rose-600/30;
+  }
+
+  .input {
+    @apply bg-[#1e2130] border border-[rgba(99,102,241,0.2)] rounded-lg px-4 py-3 text-slate-100
+           placeholder-slate-500 outline-none focus:border-indigo-500 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]
+           transition-all duration-200 w-full text-sm;
+  }
+
+  .badge-up {
+    @apply inline-flex items-center gap-1.5 bg-emerald-500/15 text-emerald-400 text-xs font-semibold 
+           px-2.5 py-1 rounded-full border border-emerald-500/20;
+  }
+
+  .badge-down {
+    @apply inline-flex items-center gap-1.5 bg-rose-500/15 text-rose-400 text-xs font-semibold 
+           px-2.5 py-1 rounded-full border border-rose-500/20;
+  }
+
+  .badge-pending {
+    @apply inline-flex items-center gap-1.5 bg-amber-500/15 text-amber-400 text-xs font-semibold 
+           px-2.5 py-1 rounded-full border border-amber-500/20;
+  }
+
+  .badge-processing {
+    @apply inline-flex items-center gap-1.5 bg-sky-500/15 text-sky-400 text-xs font-semibold 
+           px-2.5 py-1 rounded-full border border-sky-500/20;
+  }
+
+  .badge-notified {
+    @apply inline-flex items-center gap-1.5 bg-emerald-500/15 text-emerald-400 text-xs font-semibold 
+           px-2.5 py-1 rounded-full border border-emerald-500/20;
+  }
+
+  .section-title {
+    @apply text-xl font-bold text-slate-100 flex items-center gap-2.5 mb-6;
+  }
+
+  .page-container {
+    @apply max-w-7xl mx-auto px-6 py-8 animate-[fadeIn_0.3s_ease-in-out];
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-400 
+           hover:text-slate-200 hover:bg-[#1e2130] transition-all duration-200 cursor-pointer;
+  }
+
+  .nav-item.active {
+    @apply text-indigo-400 bg-indigo-600/10 border border-indigo-600/20;
+  }
+
+  .glow-dot {
+    @apply w-2 h-2 rounded-full;
+    box-shadow: 0 0 6px currentColor;
+  }
+
+  .log-line {
+    @apply font-mono text-xs text-slate-300 py-1.5 px-3 rounded border-l-2 border-indigo-500/40 
+           bg-indigo-950/20 animate-[fadeIn_0.3s_ease-in-out];
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+.pulse-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse-ring 2s ease-out infinite;
+}
