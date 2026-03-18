@@ -19,7 +19,7 @@ export default function AdminOrders() {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch('/api/orders/all', {
+      const res = await fetch('/api/admin/orders', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const data = await res.json();
@@ -33,7 +33,7 @@ export default function AdminOrders() {
   const updateStatus = async (orderId, newStatus) => {
     setUpdating(orderId);
     try {
-      const res = await fetch(`/api/orders/${orderId}/status`, {
+      const res = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

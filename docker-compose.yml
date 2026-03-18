@@ -193,6 +193,31 @@ services:
     networks:
       - microservices_net
 
+  admin-service:
+    build:
+      context: ./admin-service
+      dockerfile: Dockerfile
+    container_name: admin-service
+    ports:
+      - "3004:3003"
+    environment:
+      ADMIN_PORT: 3003
+      ORDER_SERVICE_URL: http://order-service:3001
+      IDENTITY_SERVICE_URL: http://identity-service:8081
+    depends_on:
+      order-service:
+        condition: service_healthy
+      identity-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3003/api/admin/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - microservices_net
+
   # ─── API Gateway ────────────────────────────────────────────────────────────
   api-gateway:
     build:
@@ -207,6 +232,7 @@ services:
       ORDER_SERVICE_URL: http://order-service:3001
       PRODUCT_SERVICE_URL: http://product-service:8082
       NOTIFICATION_SERVICE_URL: http://notification-service:3002
+      ADMIN_SERVICE_URL: http://admin-service:3003
     depends_on:
       identity-service:
         condition: service_healthy
@@ -215,6 +241,8 @@ services:
       product-service:
         condition: service_healthy
       notification-service:
+        condition: service_healthy
+      admin-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]

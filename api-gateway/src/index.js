@@ -77,6 +77,12 @@ app.use('/api/notifications', createProxyMiddleware({
   ws: true,
 }));
 
+// Admin Service (Node/TS :3003)
+app.use('/api/admin', createProxyMiddleware({
+  ...proxyOptions(process.env.ADMIN_SERVICE_URL || 'http://admin-service:3003'),
+  pathRewrite: { '^/api/admin': '/api/admin' },
+}));
+
 // Socket.io passthrough (WebSocket upgrade for /socket.io)
 app.use('/socket.io', createProxyMiddleware({
   ...proxyOptions(process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3002'),

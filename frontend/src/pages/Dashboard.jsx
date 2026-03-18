@@ -42,6 +42,14 @@ const SERVICE_CHECKS = [
     description: 'Node.js/TS · Port 3002',
     tech: 'Socket.io + AMQP',
   },
+  {
+    name: 'Admin Service',
+    url: '/api/admin/health',
+    icon: Shield,
+    color: '#f43f5e',
+    description: 'Node.js/TS · Port 3003',
+    tech: 'BFF + Express',
+  },
 ];
 
 function ServiceCard({ service, index }) {
@@ -209,6 +217,7 @@ export default function Dashboard() {
             { label: 'Products', value: 'Spring Boot + JPA' },
             { label: 'Orders', value: 'Node.js + Prisma' },
             { label: 'Notifications', value: 'Node.js + Socket.io' },
+            { label: 'Admin BFF', value: 'Node.js + Express' },
             { label: 'Message Broker', value: 'RabbitMQ' },
             { label: 'Databases', value: 'PostgreSQL ×4' },
             { label: 'Container', value: 'Docker Compose' },
