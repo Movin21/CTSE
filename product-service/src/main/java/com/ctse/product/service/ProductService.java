@@ -49,4 +49,16 @@ public class ProductService {
     public void deleteProduct(UUID id) {
         productRepository.deleteById(id);
     }
+
+    public Product deductStock(UUID id, int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Quantity must be greater than zero");
+        }
+        Product product = getProductById(id);
+        if (product.getStockQuantity() < quantity) {
+            throw new IllegalArgumentException("Insufficient stock for product: " + product.getName());
+        }
+        product.setStockQuantity(product.getStockQuantity() - quantity);
+        return productRepository.save(product);
+    }
 }

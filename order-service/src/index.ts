@@ -59,14 +59,48 @@ app.get('/api/orders/:id', async (req: Request, res: Response) => {
 // ─── Create order ──────────────────────────────────────────────────────────
 app.post('/api/orders', async (req: Request, res: Response) => {
     try {
-        const { productId, productName, quantity, totalPrice, userId, customerEmail } = req.body;
+        const { productId, quantity, userId, customerEmail } = req.body;
+        const requestedQty = Number(quantity) || 1;
 
+        if (!productId) {
+            return res.status(400).json({ error: 'Product ID is required' });
+        }
+
+        // 1. Fetch authentic product details from Product Service synchronously
+        let productData: any;
+        try {
+            const productResponse = await fetch(`http://product-service:8082/api/products/${productId}`);
+            if (!productResponse.ok) throw new Error('Product returned non-200');
+            productData = await productResponse.json();
+        } catch (err: any) {
+            console.error('Failed to fetch product from product-service:', err.message);
+            return res.status(404).json({ error: 'Product not found or unavailable' });
+        }
+
+        if (productData.stockQuantity < requestedQty) {
+            return res.status(400).json({ error: `Insufficient stock. Only ${productData.stockQuantity} remaining.` });
+        }
+
+        // 2. Calculate true total price to prevent client-side spoofing
+        const authenticPrice = Number(productData.price);
+        const authenticTotalPrice = authenticPrice * requestedQty;
+
+        // 3. Deduct stock synchronously via Product Service
+        try {
+            const patchRes = await fetch(`http://product-service:8082/api/products/${productId}/deduct-stock?quantity=${requestedQty}`, { method: 'PATCH' });
+            if (!patchRes.ok) throw new Error('Patch returned non-200');
+        } catch (err: any) {
+            console.error('Failed to deduct stock:', err.message);
+            return res.status(400).json({ error: 'Failed to reserve stock. It may have sold out.' });
+        }
+
+        // 4. Create Order in the local database
         const order = await prisma.order.create({
             data: {
-                productId: productId || 'unknown',
-                productName: productName || 'Unknown Product',
-                quantity: Number(quantity) || 1,
-                totalPrice: Number(totalPrice) || 0,
+                productId: productData.id,
+                productName: productData.name,
+                quantity: requestedQty,
+                totalPrice: authenticTotalPrice,
                 userId: userId || 'anonymous',
                 customerEmail: customerEmail || '',
                 status: 'PENDING',
@@ -74,13 +108,13 @@ app.post('/api/orders', async (req: Request, res: Response) => {
         });
 
         // Publish ORDER_PLACED event to RabbitMQ
-        publishOrderEvent(order);
+        publishOrderEvent({ ...order, eventType: 'ORDER_PLACED' });
         console.log(`[ORDER_PLACED] Order ${order.id} created — publishing event`);
 
         res.status(201).json(order);
     } catch (error) {
         console.error('Error creating order:', error);
-        res.status(500).json({ error: 'Failed to create order' });
+        res.status(500).json({ error: 'Failed to create order due to an internal error' });
     }
 });
 
