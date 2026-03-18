@@ -61,4 +61,13 @@ public class ProductService {
         product.setStockQuantity(product.getStockQuantity() - quantity);
         return productRepository.save(product);
     }
+
+    public Product addStock(UUID id, int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Quantity must be greater than zero");
+        }
+        Product product = getProductById(id);
+        product.setStockQuantity(product.getStockQuantity() + quantity);
+        return productRepository.save(product);
+    }
 }

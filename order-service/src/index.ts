@@ -122,6 +122,20 @@ app.post('/api/orders', async (req: Request, res: Response) => {
 app.patch('/api/orders/:id/status', async (req: Request, res: Response) => {
     try {
         const { status } = req.body;
+        
+        // If an admin is cancelling the order, restore the stock
+        if (status === 'CANCELLED') {
+            const currentOrder = await prisma.order.findUnique({ where: { id: req.params.id } });
+            if (currentOrder && currentOrder.status !== 'CANCELLED') {
+                try {
+                    const patchRes = await fetch(`http://product-service:8082/api/products/${currentOrder.productId}/add-stock?quantity=${currentOrder.quantity}`, { method: 'PATCH' });
+                    if (!patchRes.ok) console.error('Product Service returned non-200 while adding stock');
+                } catch (err: any) {
+                    console.error('Failed to communicate with product-service for restocking:', err.message);
+                }
+            }
+        }
+
         const order = await prisma.order.update({
             where: { id: req.params.id },
             data: { status },
@@ -144,6 +158,14 @@ app.patch('/api/orders/:id/cancel', async (req: Request, res: Response) => {
         if (!order) return res.status(404).json({ error: 'Order not found' });
         if (order.status === 'DISPATCHED') return res.status(400).json({ error: 'Cannot cancel a dispatched order' });
         if (order.status === 'CANCELLED') return res.status(400).json({ error: 'Order is already cancelled' });
+
+        // Restore stock when user cancels order
+        try {
+            const patchRes = await fetch(`http://product-service:8082/api/products/${order.productId}/add-stock?quantity=${order.quantity}`, { method: 'PATCH' });
+            if (!patchRes.ok) console.error('Product Service returned non-200 while adding stock');
+        } catch (err: any) {
+            console.error('Failed to communicate with product-service for restocking:', err.message);
+        }
 
         const updated = await prisma.order.update({
             where: { id: req.params.id },
