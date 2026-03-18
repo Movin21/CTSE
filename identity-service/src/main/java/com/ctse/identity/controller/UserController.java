@@ -32,6 +32,21 @@ public class UserController {
         }
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable UUID id, @RequestBody Map<String, String> body) {
+        try {
+            var user = userService.updateUser(id, body.get("username"), body.get("email"));
+            return ResponseEntity.ok(Map.of(
+                "id", user.getId().toString(),
+                "username", user.getUsername(),
+                "email", user.getEmail(),
+                "role", user.getRole().name()
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @GetMapping("/health")
     public ResponseEntity<?> health() {
         return ResponseEntity.ok(Map.of("status", "UP", "service", "identity-service"));

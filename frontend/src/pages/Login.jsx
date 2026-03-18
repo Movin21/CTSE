@@ -53,7 +53,7 @@ export default function Login() {
                 {error}
               </div>
             )}
-            
+
             <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Username</label>
               <input
@@ -104,10 +104,6 @@ export default function Login() {
             </Link>
           </div>
         </div>
-
-        <p className="text-center text-xs text-slate-600 mt-4">
-          SE4010 · Microservices Architecture · 2024
-        </p>
       </div>
     </div>
   );

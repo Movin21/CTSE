@@ -22,6 +22,14 @@ public class UserService {
     private final JwtService jwtService;
 
     public AuthResponse register(RegisterRequest request) {
+        return registerWithRole(request, User.Role.USER);
+    }
+
+    public AuthResponse registerAdmin(RegisterRequest request) {
+        return registerWithRole(request, User.Role.ADMIN);
+    }
+
+    private AuthResponse registerWithRole(RegisterRequest request, User.Role role) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new IllegalArgumentException("Username already taken");
         }
@@ -33,7 +41,7 @@ public class UserService {
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .role(User.Role.USER)
+                .role(role)
                 .build();
 
         userRepository.save(user);
@@ -61,6 +69,23 @@ public class UserService {
     public User getUserById(UUID id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+
+    public User updateUser(UUID id, String username, String email) {
+        User user = getUserById(id);
+        if (username != null && !username.isBlank()) {
+            if (!user.getUsername().equals(username) && userRepository.existsByUsername(username)) {
+                throw new IllegalArgumentException("Username already taken");
+            }
+            user.setUsername(username);
+        }
+        if (email != null && !email.isBlank()) {
+            if (!user.getEmail().equals(email) && userRepository.existsByEmail(email)) {
+                throw new IllegalArgumentException("Email already registered");
+            }
+            user.setEmail(email);
+        }
+        return userRepository.save(user);
     }
 
     private String generateTokenForUser(User user) {

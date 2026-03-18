@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { ShoppingCart, Clock, CheckCircle2, Bell, Loader2, RefreshCw, Package, Receipt } from 'lucide-react';
+import { ShoppingCart, Clock, CheckCircle2, Bell, Loader2, RefreshCw, Package, Receipt, Truck, XCircle, AlertTriangle } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 const STATUS_CONFIG = {
@@ -19,13 +18,21 @@ const STATUS_CONFIG = {
     text: 'text-sky-400',
     icon: Loader2,
   },
-  NOTIFIED: {
-    label: 'Notified',
+  DISPATCHED: {
+    label: 'Dispatched',
     color: '#10b981',
     bg: 'bg-emerald-500/15',
     border: 'border-emerald-500/20',
     text: 'text-emerald-400',
-    icon: CheckCircle2,
+    icon: Truck,
+  },
+  CANCELLED: {
+    label: 'Cancelled',
+    color: '#f43f5e',
+    bg: 'bg-rose-500/15',
+    border: 'border-rose-500/20',
+    text: 'text-rose-400',
+    icon: XCircle,
   },
 };
 
@@ -40,7 +47,7 @@ function StatusBadge({ status }) {
   );
 }
 
-function TimelineItem({ order, index }) {
+function TimelineItem({ order, index, onCancel }) {
   const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
   const isLast = false;
   
@@ -65,7 +72,17 @@ function TimelineItem({ order, index }) {
             </div>
             <p className="text-xs text-slate-500 font-mono">#{order.id?.substring(0, 16)}...</p>
           </div>
-          <StatusBadge status={order.status} />
+          <div className="flex flex-col items-end gap-2">
+            <StatusBadge status={order.status} />
+            {(order.status === 'PENDING' || order.status === 'PROCESSING') && (
+              <button 
+                onClick={() => onCancel(order.id)}
+                className="text-[10px] uppercase font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 px-2 py-1 rounded transition-colors"
+              >
+                Cancel Order
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-4 text-xs text-slate-500 pt-2.5 border-t border-[rgba(99,102,241,0.08)]">
@@ -91,6 +108,8 @@ function TimelineItem({ order, index }) {
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showCancelModal, setShowCancelModal] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
   const { user, token } = useAuthStore();
 
   const fetchOrders = async () => {
@@ -115,6 +134,31 @@ export default function Orders() {
     return () => clearInterval(interval);
   }, []);
 
+  const handleCancelClick = (orderId) => {
+    setShowCancelModal(orderId);
+  };
+
+  const confirmCancel = async () => {
+    if (!showCancelModal) return;
+    setCancelling(true);
+    try {
+      const res = await fetch(`/api/orders/${showCancelModal}/cancel`, {
+        method: 'PATCH',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        setOrders((prev) => prev.map(o => o.id === showCancelModal ? { ...o, status: 'CANCELLED' } : o));
+        setShowCancelModal(null);
+      } else {
+        alert('Failed to cancel order.');
+      }
+    } catch {
+      alert('Network error while cancelling order.');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const statusCounts = orders.reduce((acc, o) => {
     acc[o.status] = (acc[o.status] || 0) + 1;
     return acc;
@@ -138,7 +182,7 @@ export default function Orders() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-4 gap-4 mb-8">
         {Object.entries(STATUS_CONFIG).map(([status, cfg]) => {
           const Icon = cfg.icon;
           return (
@@ -164,7 +208,7 @@ export default function Orders() {
       ) : (
         <div className="max-w-2xl">
           {orders.map((order, i) => (
-            <TimelineItem key={order.id} order={order} index={i} />
+            <TimelineItem key={order.id} order={order} index={i} onCancel={handleCancelClick} />
           ))}
         </div>
       )}
@@ -175,11 +219,44 @@ export default function Orders() {
           <Bell size={14} className="text-indigo-400" /> Order Flow
         </h3>
         <div className="flex items-center gap-2 text-xs text-slate-500">
-          {['Order POSTed', '→', 'Saved (PENDING)', '→', 'RabbitMQ EVENT', '→', 'Notification consumed', '→', 'Socket.io push (NOTIFIED)'].map((step, i) => (
+          {['Order POSTed', '→', 'Saved (PENDING)', '→', 'Admin Update (PROCESSING/DISPATCHED)', '→', 'RabbitMQ EVENT', '→', 'Notification consumed/Socket.io push'].map((step, i) => (
             <span key={i} className={step === '→' ? 'text-indigo-600' : 'text-slate-400'}>{step}</span>
           ))}
         </div>
       </div>
+
+      {/* Cancel Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]">
+          <div className="bg-[#161820] border border-[rgba(244,63,94,0.2)] rounded-2xl w-full max-w-sm overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.8)] animate-[slideUp_0.2s_ease-out]">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center mx-auto mb-4 border border-rose-500/20">
+                <AlertTriangle size={24} className="text-rose-400" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-100 mb-2">Cancel Order?</h3>
+              <p className="text-sm text-slate-400 leading-relaxed mb-6">
+                Are you sure you want to cancel order <span className="font-mono text-slate-300">#{showCancelModal.substring(0, 8)}</span>? This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowCancelModal(null)}
+                  disabled={cancelling}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors disabled:opacity-50"
+                >
+                  No, Keep it
+                </button>
+                <button 
+                  onClick={confirmCancel}
+                  disabled={cancelling}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-rose-600 hover:bg-rose-500 transition-colors flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(244,63,94,0.3)] disabled:opacity-50"
+                >
+                  {cancelling ? <Loader2 size={16} className="animate-spin" /> : 'Yes, Cancel'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

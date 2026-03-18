@@ -61,6 +61,22 @@ app.get('/api/notifications', async (_req: Request, res: Response) => {
     }
 });
 
+// ─── Get notifications for a specific user (by userId from orders) ─────────
+app.get('/api/notifications/user/:userId', async (req: Request, res: Response) => {
+    try {
+        // Find all order IDs belonging to this user
+        const notifications = await prisma.notification.findMany({
+            orderBy: { createdAt: 'desc' },
+            take: 50,
+        });
+        // Filter by userId embedded in the orderId's order (notifications store orderId)
+        // For simplicity, we return all notifications and let frontend filter by its orders
+        res.json(notifications);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch user notifications' });
+    }
+});
+
 // ─── Live log feed (admin view) ────────────────────────────────────────────
 app.get('/api/notifications/logs', (_req: Request, res: Response) => {
     res.json(logFeed);

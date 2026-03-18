@@ -23,5 +23,6 @@ model Order {
 enum OrderStatus {
   PENDING
   PROCESSING
-  NOTIFIED
+  DISPATCHED
+  CANCELLED
 }
