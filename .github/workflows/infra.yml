@@ -52,3 +52,12 @@ jobs:
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: terraform apply -auto-approve tfplan
+
+      - name: Automatically Sync ACR Secrets to GitHub
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GIT_TOKEN }}
+        run: |
+          gh secret set ACR_LOGIN_SERVER --body "$(terraform output -raw acr_login_server)"
+          gh secret set ACR_USERNAME --body "$(terraform output -raw acr_admin_username)"
+          gh secret set ACR_PASSWORD --body "$(terraform output -raw acr_admin_password)"

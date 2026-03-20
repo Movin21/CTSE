@@ -20,6 +20,27 @@ module "container_apps_env" {
   environment_name    = var.aca_env_name
 }
 
+module "acr" {
+  source              = "./modules/acr"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  registry_name       = "ctseacr${random_id.suffix.hex}"
+}
+
+output "acr_login_server" {
+  value = module.acr.login_server
+}
+
+output "acr_admin_username" {
+  value     = module.acr.admin_username
+  sensitive = true
+}
+
+output "acr_admin_password" {
+  value     = module.acr.admin_password
+  sensitive = true
+}
+
 resource "random_id" "suffix" {
   byte_length = 4
 }
