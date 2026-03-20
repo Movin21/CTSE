@@ -13,6 +13,7 @@ const PORT = process.env.NOTIFICATION_PORT || process.env.PORT || 3002;
 
 // ─── Socket.io Setup ───────────────────────────────────────────────────────
 export const io = new SocketIOServer(server, {
+  path: "/api/notifications/socket.io",
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
@@ -44,14 +45,17 @@ app.use(morgan("combined"));
 app.use(express.json());
 
 // ─── Health ────────────────────────────────────────────────────────────────
-app.get("/health", (_req: Request, res: Response) => {
+const healthHandler = (_req: Request, res: Response) => {
   res.json({
     status: "UP",
     service: "notification-service",
     connectedClients: io.engine.clientsCount,
     timestamp: new Date().toISOString(),
   });
-});
+};
+
+app.get("/health", healthHandler);
+app.get("/api/notifications/health", healthHandler);
 
 // ─── Get all notifications ─────────────────────────────────────────────────
 app.get("/api/notifications", async (_req: Request, res: Response) => {
