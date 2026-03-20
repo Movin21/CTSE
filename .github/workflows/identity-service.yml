@@ -1,0 +1,20 @@
+name: Identity CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths: ['identity-service/**']
+  pull_request:
+    branches: [main]
+    paths: ['identity-service/**']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/service-ci-cd.yml
+    with:
+      service: "identity-service"
+      language: "java"
+      port: 8081
+      ingress: "internal"
+    secrets: inherit

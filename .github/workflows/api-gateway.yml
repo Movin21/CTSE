@@ -1,0 +1,20 @@
+name: API Gateway CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths: ['api-gateway/**']
+  pull_request:
+    branches: [main]
+    paths: ['api-gateway/**']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/service-ci-cd.yml
+    with:
+      service: "api-gateway"
+      language: "node"
+      port: 8080
+      ingress: "external"
+    secrets: inherit

@@ -1,0 +1,127 @@
+name: Reusable CI/CD
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        required: true
+        type: string
+      language:
+        required: true
+        type: string
+      port:
+        required: true
+        type: number
+      ingress:
+        required: true
+        type: string
+
+jobs:
+  ci-java:
+    if: inputs.language == 'java'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - working-directory: ./${{ inputs.service }}
+        run: mvn clean test
+      - uses: snyk/actions/maven@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --all-projects
+        continue-on-error: true
+
+  ci-node:
+    if: inputs.language == 'node'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - working-directory: ./${{ inputs.service }}
+        run: npm ci || npm install
+      - working-directory: ./${{ inputs.service }}
+        run: npm run test --if-present
+        env:
+          CI: true
+      - uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+        continue-on-error: true
+
+  docker-build-push:
+    needs: [ci-java, ci-node]
+    if: |
+      always() && 
+      (needs.ci-java.result == 'success' || needs.ci-java.result == 'skipped') &&
+      (needs.ci-node.result == 'success' || needs.ci-node.result == 'skipped') &&
+      !cancelled()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.ACR_LOGIN_SERVER }}/${{ inputs.service }}
+          tags: type=sha,format=long
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ inputs.service }}
+          push: true
+          tags: |
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ inputs.service }}:sha-${{ github.sha }}
+
+  deploy-azure:
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.service }}
+    steps:
+      - name: Log in to Azure
+        run: |
+          az login --service-principal \
+            -u ${{ secrets.ARM_CLIENT_ID }} \
+            -p ${{ secrets.ARM_CLIENT_SECRET }} \
+            --tenant ${{ secrets.ARM_TENANT_ID }}
+          az account set --subscription ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      - name: Deploy to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/${{ inputs.service }}:sha-${{ github.sha }}
+          containerAppName: ${{ inputs.service }}
+          resourceGroup: "ctse-microservices-rg"
+          containerAppEnvironment: "ctse-env"
+          targetPort: ${{ inputs.port }}
+          ingress: ${{ inputs.ingress }}
+          registryUrl: ${{ secrets.ACR_LOGIN_SERVER }}
+          registryUsername: ${{ secrets.ACR_USERNAME }}
+          registryPassword: ${{ secrets.ACR_PASSWORD }}
+          environmentVariables: |
+            DATABASE_URL=${{ secrets.DB_URL }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}
+            DATABASE_USER=${{ secrets.POSTGRES_USER }}
+            DATABASE_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            ORDER_SERVICE_URL=http://order-service
+            IDENTITY_SERVICE_URL=http://identity-service
+            PRODUCT_SERVICE_URL=http://product-service
+            NOTIFICATION_SERVICE_URL=http://notification-service
+            ADMIN_SERVICE_URL=http://admin-service

@@ -1,0 +1,20 @@
+name: Product CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths: ['product-service/**']
+  pull_request:
+    branches: [main]
+    paths: ['product-service/**']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/service-ci-cd.yml
+    with:
+      service: "product-service"
+      language: "java"
+      port: 8082
+      ingress: "internal"
+    secrets: inherit
