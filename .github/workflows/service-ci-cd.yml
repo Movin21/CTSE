@@ -17,19 +17,23 @@ on:
         type: string
 
 jobs:
-  ci-java:
-    if: inputs.language == 'java'
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
+      # Java Steps
       - uses: actions/setup-java@v4
+        if: inputs.language == 'java'
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
       - working-directory: ./${{ inputs.service }}
+        if: inputs.language == 'java'
         run: mvn clean test
       - uses: snyk/actions/maven@master
+        if: inputs.language == 'java'
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
@@ -37,21 +41,21 @@ jobs:
           args: --all-projects
         continue-on-error: true
 
-  ci-node:
-    if: inputs.language == 'node'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      # Node Steps
       - uses: actions/setup-node@v4
+        if: inputs.language == 'node'
         with:
           node-version: '20'
       - working-directory: ./${{ inputs.service }}
+        if: inputs.language == 'node'
         run: npm ci || npm install
       - working-directory: ./${{ inputs.service }}
+        if: inputs.language == 'node'
         run: npm run test --if-present
         env:
           CI: true
       - uses: snyk/actions/node@master
+        if: inputs.language == 'node'
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
@@ -59,12 +63,7 @@ jobs:
         continue-on-error: true
 
   docker-build-push:
-    needs: [ci-java, ci-node]
-    if: |
-      always() && 
-      (needs['ci-java'].result == 'success' || needs['ci-java'].result == 'skipped') &&
-      (needs['ci-node'].result == 'success' || needs['ci-node'].result == 'skipped') &&
-      !cancelled()
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
