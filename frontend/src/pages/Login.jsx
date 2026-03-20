@@ -1,30 +1,40 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Shield, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
-import { useAuthStore } from '../store/authStore';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Shield, Eye, EyeOff, LogIn, AlertCircle } from "lucide-react";
+import { useAuthStore } from "../store/authStore";
+
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 export default function Login() {
-  const [form, setForm] = useState({ username: '', password: '' });
+  const [form, setForm] = useState({ username: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const { login } = useAuthStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
-      login({ id: data.userId, username: data.username, email: data.email, role: data.role }, data.token);
-      navigate('/');
+      if (!res.ok) throw new Error(data.error || "Login failed");
+      login(
+        {
+          id: data.userId,
+          username: data.username,
+          email: data.email,
+          role: data.role,
+        },
+        data.token,
+      );
+      navigate("/");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -33,8 +43,13 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0b0f] flex items-center justify-center px-4"
-      style={{ backgroundImage: 'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.1) 0%, transparent 60%)' }}>
+    <div
+      className="min-h-screen bg-[#0a0b0f] flex items-center justify-center px-4"
+      style={{
+        backgroundImage:
+          "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.1) 0%, transparent 60%)",
+      }}
+    >
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -42,7 +57,9 @@ export default function Login() {
             <Shield size={28} className="text-indigo-400" />
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Welcome back</h1>
-          <p className="text-slate-500 text-sm mt-1">Sign in to the CTSE Platform</p>
+          <p className="text-slate-500 text-sm mt-1">
+            Sign in to the CTSE Platform
+          </p>
         </div>
 
         <div className="card border-[rgba(99,102,241,0.2)]">
@@ -55,7 +72,9 @@ export default function Login() {
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Username</label>
+              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">
+                Username
+              </label>
               <input
                 className="input"
                 type="text"
@@ -67,14 +86,18 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Password</label>
+              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">
+                Password
+              </label>
               <div className="relative">
                 <input
                   className="input pr-10"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
                   value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, password: e.target.value })
+                  }
                   required
                 />
                 <button
@@ -87,19 +110,26 @@ export default function Login() {
               </div>
             </div>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full justify-center mt-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full justify-center mt-2"
+            >
               {loading ? (
                 <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               ) : (
                 <LogIn size={16} />
               )}
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 
           <div className="mt-5 pt-4 border-t border-[rgba(99,102,241,0.1)] text-center text-sm text-slate-500">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-indigo-400 hover:text-indigo-300 font-medium">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="text-indigo-400 hover:text-indigo-300 font-medium"
+            >
               Create one
             </Link>
           </div>
