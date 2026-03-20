@@ -62,8 +62,8 @@ jobs:
     needs: [ci-java, ci-node]
     if: |
       always() && 
-      (needs.ci-java.result == 'success' || needs.ci-java.result == 'skipped') &&
-      (needs.ci-node.result == 'success' || needs.ci-node.result == 'skipped') &&
+      (needs['ci-java'].result == 'success' || needs['ci-java'].result == 'skipped') &&
+      (needs['ci-node'].result == 'success' || needs['ci-node'].result == 'skipped') &&
       !cancelled()
     runs-on: ubuntu-latest
     permissions:
