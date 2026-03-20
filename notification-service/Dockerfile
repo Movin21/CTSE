@@ -21,4 +21,4 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
 USER appuser
 EXPOSE 3002
-CMD ["sh", "-c", "export DB_HOST=$(echo $DATABASE_URL | awk '{print $1}' | sed -E 's|.*://||' | cut -d/ -f1) && export DATABASE_URL=\"postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DB_HOST/notification_db?schema=public\" && echo \"Prisma connecting to $DB_HOST/notification_db\" && npx prisma db push --accept-data-loss && node dist/index.js"]
+CMD ["sh", "-c", "export DB_HOST=$(echo $DATABASE_URL | awk '{print $1}' | sed -E 's|.*://||' | cut -d/ -f1) && export DATABASE_URL=\"postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DB_HOST/notification_db?schema=public&sslmode=require\" && echo \"Prisma connecting to $DB_HOST/notification_db\" && npx prisma db push --accept-data-loss && node dist/index.js"]

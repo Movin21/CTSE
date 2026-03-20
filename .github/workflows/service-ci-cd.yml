@@ -21,13 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       # Java Steps
       - uses: actions/setup-java@v4
         if: inputs.language == 'java'
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          java-version: "17"
+          distribution: "temurin"
           cache: maven
       - working-directory: ./${{ inputs.service }}
         if: inputs.language == 'java'
@@ -45,7 +45,7 @@ jobs:
       - uses: actions/setup-node@v4
         if: inputs.language == 'node'
         with:
-          node-version: '20'
+          node-version: "20"
       - working-directory: ./${{ inputs.service }}
         if: inputs.language == 'node'
         run: npm ci || npm install
