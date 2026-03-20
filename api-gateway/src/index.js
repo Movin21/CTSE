@@ -9,18 +9,6 @@ const rateLimit = require("express-rate-limit");
 const app = express();
 const PORT = process.env.GATEWAY_PORT || process.env.PORT || 8080;
 
-// ─── Security Middleware ────────────────────────────────────────────────────
-app.use(helmet());
-
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many requests, please try again later." },
-});
-app.use(limiter);
-
 // ─── General Middleware ─────────────────────────────────────────────────────
 app.use(
   cors({
@@ -29,6 +17,19 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
+
+// ─── Security Middleware ────────────────────────────────────────────────────
+app.use(helmet());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200000, // INCREASED to allow frontend dashboard health checks
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please try again later." },
+});
+app.use(limiter);
+
 app.use(morgan("combined"));
 
 // ─── Health check ───────────────────────────────────────────────────────────
