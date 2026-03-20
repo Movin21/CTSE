@@ -7,7 +7,7 @@ variable "resource_group_name" {
 variable "location" {
   type        = string
   description = "The Azure Region"
-  default     = "East US"
+  default     = "southeastasia"
 }
 
 variable "postgres_admin_login" {
