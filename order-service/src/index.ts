@@ -14,15 +14,7 @@ app.use(morgan("combined"));
 app.use(express.json());
 
 // ─── Health ────────────────────────────────────────────────────────────────
-app.get("/api/orders/health", (_req: Request, res: Response) => {
-  res.json({
-    status: "UP",
-    service: "order-service",
-    timestamp: new Date().toISOString(),
-  });
-});
-
-app.get("/health", (_req: Request, res: Response) => {
+app.get(["/health", "/api/orders/health"], (_req: Request, res: Response) => {
   res.json({
     status: "UP",
     service: "order-service",

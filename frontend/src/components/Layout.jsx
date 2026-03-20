@@ -45,7 +45,7 @@ export default function Layout({ children }) {
   // Connect Socket.io for real-time notifications
   useEffect(() => {
     const socket = io(API_URL, {
-      path: "/api/notifications/socket.io",
+
       transports: ["websocket", "polling"],
     });
     socketRef.current = socket;

@@ -28,7 +28,6 @@ export default function AdminLogs() {
 
     // Connect to Notification Service Socket.io
     const socket = io(API_URL, {
-      path: "/api/notifications/socket.io",
       transports: ["websocket", "polling"],
     });
     socketRef.current = socket;
