@@ -13,4 +13,4 @@ RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 COPY --from=builder /app/target/*.jar app.jar
 USER appuser
 EXPOSE 8082
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["/bin/sh", "-c", "export SPRING_DATASOURCE_URL=$(echo $DATABASE_URL | sed 's|^postgres://|jdbc:postgresql://|; s|^postgresql://|jdbc:postgresql://|') && java -jar app.jar"]
