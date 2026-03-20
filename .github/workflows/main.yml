@@ -149,8 +149,8 @@ jobs:
         with:
           imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/${{ matrix.service }}:sha-${{ github.sha }}
           containerAppName: ${{ matrix.service }}
-          resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          containerAppEnvironment: ${{ secrets.AZURE_CONTAINER_APP_ENV }}
+          resourceGroup: "ctse-microservices-rg"
+          containerAppEnvironment: "ctse-env"
           targetPort: ${{ matrix.port }}
           ingress: ${{ matrix.ingress }}
           registryUrl: ${{ secrets.ACR_LOGIN_SERVER }}
