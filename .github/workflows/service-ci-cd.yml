@@ -110,7 +110,8 @@ jobs:
           registryUrl: ${{ secrets.ACR_LOGIN_SERVER }}
           registryUsername: ${{ secrets.ACR_USERNAME }}
           registryPassword: ${{ secrets.ACR_PASSWORD }}
-          environmentVariables: |
+          # Using the space-separated or comma-separated format is often more reliable
+          environmentVariables: >-
             DATABASE_URL=${{ secrets.DB_URL }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}
