@@ -7,6 +7,8 @@ import { connectRabbitMQ, publishOrderEvent } from "./rabbitmq";
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.ORDER_PORT || process.env.PORT || 3001;
+const PRODUCT_SERVICE_URL =
+  process.env.PRODUCT_SERVICE_URL || "http://product-service:8082";
 
 // ─── Middleware ────────────────────────────────────────────────────────────
 app.use(cors());
@@ -76,7 +78,7 @@ app.post("/api/orders", async (req: Request, res: Response) => {
     let productData: any;
     try {
       const productResponse = await fetch(
-        `http://product-service:8082/api/products/${productId}`,
+        `${PRODUCT_SERVICE_URL}/api/products/${productId}`,
       );
       if (!productResponse.ok) throw new Error("Product returned non-200");
       productData = await productResponse.json();
@@ -91,11 +93,9 @@ app.post("/api/orders", async (req: Request, res: Response) => {
     }
 
     if (productData.stockQuantity < requestedQty) {
-      return res
-        .status(400)
-        .json({
-          error: `Insufficient stock. Only ${productData.stockQuantity} remaining.`,
-        });
+      return res.status(400).json({
+        error: `Insufficient stock. Only ${productData.stockQuantity} remaining.`,
+      });
     }
 
     // 2. Calculate true total price to prevent client-side spoofing
@@ -105,7 +105,7 @@ app.post("/api/orders", async (req: Request, res: Response) => {
     // 3. Deduct stock synchronously via Product Service
     try {
       const patchRes = await fetch(
-        `http://product-service:8082/api/products/${productId}/deduct-stock?quantity=${requestedQty}`,
+        `${PRODUCT_SERVICE_URL}/api/products/${productId}/deduct-stock?quantity=${requestedQty}`,
         { method: "PATCH" },
       );
       if (!patchRes.ok) throw new Error("Patch returned non-200");
@@ -155,7 +155,7 @@ app.patch("/api/orders/:id/status", async (req: Request, res: Response) => {
       if (currentOrder && currentOrder.status !== "CANCELLED") {
         try {
           const patchRes = await fetch(
-            `http://product-service:8082/api/products/${currentOrder.productId}/add-stock?quantity=${currentOrder.quantity}`,
+            `${PRODUCT_SERVICE_URL}/api/products/${currentOrder.productId}/add-stock?quantity=${currentOrder.quantity}`,
             { method: "PATCH" },
           );
           if (!patchRes.ok)
@@ -203,7 +203,7 @@ app.patch("/api/orders/:id/cancel", async (req: Request, res: Response) => {
     // Restore stock when user cancels order
     try {
       const patchRes = await fetch(
-        `http://product-service:8082/api/products/${order.productId}/add-stock?quantity=${order.quantity}`,
+        `${PRODUCT_SERVICE_URL}/api/products/${order.productId}/add-stock?quantity=${order.quantity}`,
         { method: "PATCH" },
       );
       if (!patchRes.ok)
