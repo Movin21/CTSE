@@ -34,10 +34,28 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Debug Missing Secrets
+        run: |
+          echo "Checking required environment variables..."
+          missing=0
+          for var in ARM_CLIENT_ID ARM_CLIENT_SECRET ARM_SUBSCRIPTION_ID ARM_TENANT_ID TF_VAR_postgres_admin_login TF_VAR_postgres_admin_password; do
+            if [ -z "${!var}" ]; then
+              echo "❌ $var is MISSING or EMPTY"
+              missing=1
+            else
+              echo "✅ $var is set"
+            fi
+          done
+          if [ $missing -eq 1 ]; then
+            echo "Pipeline halted because required secrets are not defined in GitHub!"
+            exit 1
+          fi
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.7.0"
+          terraform_wrapper: false
 
       - name: Terraform Init
         run: terraform init
