@@ -33,11 +33,11 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure_ips" {
 }
 
 resource "azurerm_postgresql_flexible_server_database" "dbs" {
-  for_each   = toset(var.database_names)
-  name       = each.key
-  server_id  = azurerm_postgresql_flexible_server.pg_server.id
-  charset    = "UTF8"
-  collation  = "en_US.utf8"
+  for_each  = toset(var.database_names)
+  name      = each.key
+  server_id = azurerm_postgresql_flexible_server.pg_server.id
+  charset   = "UTF8"
+  collation = "en_US.utf8"
 }
 
 output "server_fqdn" {

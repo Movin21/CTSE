@@ -8,7 +8,7 @@ resource "azurerm_container_app_environment" "aca_env" {
   resource_group_name = var.resource_group_name
 
   # Omitting log_analytics_workspace_id prevents creating/attaching a LA workspace, making it minimal cost
-  
+
   # For low cost workloads or standard hosting, no special workload profiles are needed unless requested.
 }
 
