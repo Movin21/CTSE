@@ -117,8 +117,9 @@ jobs:
             RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}
             DATABASE_USER=${{ secrets.POSTGRES_USER }}
             DATABASE_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-            ORDER_SERVICE_URL=http://order-service
-            IDENTITY_SERVICE_URL=http://identity-service
-            PRODUCT_SERVICE_URL=http://product-service
-            NOTIFICATION_SERVICE_URL=http://notification-service
-            ADMIN_SERVICE_URL=http://admin-service
+            ORDER_SERVICE_URL=https://order-service.internal.livelysky-59b346bc.southeastasia.azurecontainerapps.io
+            API_GATEWAY_URL=https://api-gateway.livelysky-59b346bc.southeastasia.azurecontainerapps.io
+            IDENTITY_SERVICE_URL=https://identity-service.internal.livelysky-59b346bc.southeastasia.azurecontainerapps.io
+            PRODUCT_SERVICE_URL=https://product-service.internal.livelysky-59b346bc.southeastasia.azurecontainerapps.io
+            NOTIFICATION_SERVICE_URL=https://notification-service.internal.livelysky-59b346bc.southeastasia.azurecontainerapps.io
+            ADMIN_SERVICE_URL=https://admin-service.internal.livelysky-59b346bc.southeastasia.azurecontainerapps.io
