@@ -1,0 +1,150 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ci-java:
+    name: CI - Java Services
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [identity-service, product-service]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and Test (${{ matrix.service }})
+        working-directory: ./${{ matrix.service }}
+        run: mvn clean test
+
+      - name: Snyk Security Scan (${{ matrix.service }})
+        uses: snyk/actions/maven@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --all-projects
+        continue-on-error: true
+
+  ci-node:
+    name: CI - Node.js Services
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [order-service, notification-service, admin-service, api-gateway, frontend]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './${{ matrix.service }}/package-lock.json'
+
+      - name: Install Dependencies
+        working-directory: ./${{ matrix.service }}
+        run: npm ci || npm install
+
+      - name: Run Tests (${{ matrix.service }})
+        working-directory: ./${{ matrix.service }}
+        run: npm test
+        env:
+          CI: true
+
+      - name: Snyk Security Scan (${{ matrix.service }})
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+        continue-on-error: true
+
+  docker-build-push:
+    name: Docker Build & Push
+    needs: [ci-java, ci-node]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: [identity-service, product-service, order-service, notification-service, admin-service, api-gateway, frontend]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/${{ matrix.service }}
+          tags: |
+            type=sha,format=long
+
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy-azure:
+    name: CD - Deploy to Azure Container Apps
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: ${{ matrix.service }}
+    strategy:
+      matrix:
+        service: [identity-service, product-service, order-service, notification-service, admin-service, api-gateway, frontend]
+    steps:
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          imageToDeploy: ghcr.io/${{ github.repository }}/${{ matrix.service }}:sha-${{ github.sha }}
+          containerAppName: ${{ matrix.service }}
+          resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          containerAppEnvironment: ${{ secrets.AZURE_CONTAINER_APP_ENV }}
+          registryUrl: ghcr.io
+          registryUsername: ${{ github.actor }}
+          registryPassword: ${{ secrets.GITHUB_TOKEN }}
+          environmentVariables: |
+            DATABASE_URL=${{ secrets.DB_URL }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}
+            DATABASE_USER=${{ secrets.POSTGRES_USER }}
+            DATABASE_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            ORDER_SERVICE_URL=http://order-service
+            IDENTITY_SERVICE_URL=http://identity-service
+            PRODUCT_SERVICE_URL=http://product-service
+            NOTIFICATION_SERVICE_URL=http://notification-service
+            ADMIN_SERVICE_URL=http://admin-service
