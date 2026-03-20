@@ -13,4 +13,4 @@ RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 COPY --from=builder /app/target/*.jar app.jar
 USER appuser
 EXPOSE 8081
-ENTRYPOINT ["/bin/sh", "-c", "export SPRING_DATASOURCE_URL=$(echo $DATABASE_URL | cut -d' ' -f1 | sed 's|^postgres://|jdbc:postgresql://|; s|^postgresql://|jdbc:postgresql://|; s|/([^/?]*)(\\?.*)?$|/identity_db\\2|') && java -jar app.jar"]
+ENTRYPOINT ["/bin/sh", "-c", "export SPRING_DATASOURCE_URL=$(echo $DATABASE_URL | awk '{print $1}' | sed 's|^postgres://|jdbc:postgresql://|; s|^postgresql://|jdbc:postgresql://|; s|/([^/?]*)(\\?.*)?$|/identity_db\\2|') && echo \"Fixing URL: $SPRING_DATASOURCE_URL\" && java -jar app.jar"]
