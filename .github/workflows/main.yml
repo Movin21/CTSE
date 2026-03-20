@@ -3,10 +3,10 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
   workflow_dispatch:
 
 jobs:
@@ -121,12 +121,36 @@ jobs:
     environment: ${{ matrix.service }}
     strategy:
       matrix:
-        service: [identity-service, product-service, order-service, notification-service, admin-service, api-gateway, frontend]
+        include:
+          - service: identity-service
+            port: 8081
+            ingress: internal
+          - service: product-service
+            port: 8082
+            ingress: internal
+          - service: order-service
+            port: 3001
+            ingress: internal
+          - service: notification-service
+            port: 3002
+            ingress: internal
+          - service: admin-service
+            port: 3003
+            ingress: internal
+          - service: api-gateway
+            port: 8080
+            ingress: external
+          - service: frontend
+            port: 80
+            ingress: external
     steps:
       - name: Log in to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+        run: |
+          az login --service-principal \
+            -u ${{ secrets.ARM_CLIENT_ID }} \
+            -p ${{ secrets.ARM_CLIENT_SECRET }} \
+            --tenant ${{ secrets.ARM_TENANT_ID }}
+          az account set --subscription ${{ secrets.ARM_SUBSCRIPTION_ID }}
 
       - name: Deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v2
@@ -135,6 +159,8 @@ jobs:
           containerAppName: ${{ matrix.service }}
           resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
           containerAppEnvironment: ${{ secrets.AZURE_CONTAINER_APP_ENV }}
+          targetPort: ${{ matrix.port }}
+          ingress: ${{ matrix.ingress }}
           registryUrl: ghcr.io
           registryUsername: ${{ github.actor }}
           registryPassword: ${{ secrets.GIT_TOKEN }}
