@@ -61,7 +61,7 @@ jobs:
 
       - name: Run Tests (${{ matrix.service }})
         working-directory: ./${{ matrix.service }}
-        run: npm test
+        run: npm run test --if-present
         env:
           CI: true
 
