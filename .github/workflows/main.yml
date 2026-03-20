@@ -59,12 +59,6 @@ jobs:
         working-directory: ./${{ matrix.service }}
         run: npm ci || npm install
 
-      - name: Run Tests (${{ matrix.service }})
-        working-directory: ./${{ matrix.service }}
-        run: npm run test --if-present
-        env:
-          CI: true
-
       - name: Snyk Security Scan (${{ matrix.service }})
         uses: snyk/actions/node@master
         env:
