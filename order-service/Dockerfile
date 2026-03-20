@@ -21,4 +21,4 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
 USER appuser
 EXPOSE 3001
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/index.js"]
+CMD ["sh", "-c", "export DATABASE_URL=$(echo $DATABASE_URL | sed 's|^jdbc:postgresql:|postgresql:|') && npx prisma db push --accept-data-loss && node dist/index.js"]
