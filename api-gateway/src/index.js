@@ -89,14 +89,13 @@ app.use(
   }),
 );
 
-// Notifications (Node/TS :3002) — also handles WebSocket upgrades
+// Notifications (Node/TS :3002)
 app.use(
   createProxyMiddleware("/api/notifications", {
     ...proxyOptions(
       process.env.NOTIFICATION_SERVICE_URL ||
         "http://notification-service:3002",
     ),
-    ws: true,
   }),
 );
 
@@ -110,15 +109,21 @@ app.use(
 );
 
 // Socket.io passthrough (WebSocket upgrade for /socket.io)
-app.use(
-  createProxyMiddleware("/socket.io", {
-    ...proxyOptions(
-      process.env.NOTIFICATION_SERVICE_URL ||
-        "http://notification-service:3002",
-    ),
-    ws: true,
-  }),
-);
+const socketIOProxy = createProxyMiddleware("/socket.io", {
+  target:
+    process.env.NOTIFICATION_SERVICE_URL || "http://notification-service:3002",
+  changeOrigin: true,
+  ws: true,
+  on: {
+    error: (err, req, res) => {
+      console.error(`[PROXY ERROR - socket.io] ${err.message}`);
+      if (res && res.writeHead) {
+        res.status(502).json({ error: "Service temporarily unavailable" });
+      }
+    },
+  },
+});
+app.use(socketIOProxy);
 
 // ─── Actuator health for identity & product (pass-through for dashboard) ───
 app.use(
@@ -140,7 +145,5 @@ const server = app.listen(PORT, () => {
   );
 });
 
-// Handle WebSocket upgrades for socket.io
-server.on("upgrade", (req, socket, head) => {
-  console.log("[API Gateway] WebSocket upgrade request for:", req.url);
-});
+// Forward WebSocket upgrade events to the Socket.io proxy
+server.on("upgrade", socketIOProxy.upgrade);
