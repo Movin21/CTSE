@@ -62,8 +62,11 @@ app.post('/api/admin/register', async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error('Failed to register admin natively:', error.message);
         const status = error.response?.status || 500;
-        const message = error.response?.data || 'Failed to register admin';
-        res.status(status).json({ error: message, data: error.response?.data });
+        const errorData = error.response?.data;
+        const message = typeof errorData === 'string'
+            ? errorData
+            : errorData?.error || errorData?.message || 'Failed to register admin';
+        res.status(status).json({ error: message });
     }
 });
 
