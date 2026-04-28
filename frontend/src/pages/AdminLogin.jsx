@@ -57,7 +57,7 @@ export default function AdminLogin() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-rose-600/20 border border-rose-600/30 mb-4 shadow-[0_0_30px_rgba(244,63,94,0.3)]">
             <Shield size={28} className="text-rose-400" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-100">Admin Access</h1>
+          <h1 className="text-2xl font-bold text-slate-100">Admin Access Test</h1>
           <p className="text-slate-500 text-sm mt-1">
             Sign in with administrator credentials
           </p>
