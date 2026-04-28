@@ -9,6 +9,9 @@ on:
     paths: ['order-service/**']
   workflow_dispatch:
 
+permissions:
+  security-events: write
+
 jobs:
   deploy:
     uses: ./.github/workflows/service-ci-cd.yml

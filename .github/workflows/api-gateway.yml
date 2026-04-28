@@ -9,6 +9,9 @@ on:
     paths: ['api-gateway/**']
   workflow_dispatch:
 
+permissions:
+  security-events: write
+
 jobs:
   deploy:
     uses: ./.github/workflows/service-ci-cd.yml
