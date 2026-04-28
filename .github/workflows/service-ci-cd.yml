@@ -86,8 +86,34 @@ jobs:
           tags: |
             ${{ secrets.ACR_LOGIN_SERVER }}/${{ inputs.service }}:sha-${{ github.sha }}
 
-  deploy-azure:
+  trivy-scan:
     needs: docker-build-push
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ secrets.ACR_LOGIN_SERVER }}/${{ inputs.service }}:sha-${{ github.sha }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          exit-code: "0"
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+
+  deploy-azure:
+    needs: [docker-build-push, trivy-scan]
     runs-on: ubuntu-latest
     environment: ${{ inputs.service }}
     steps:
